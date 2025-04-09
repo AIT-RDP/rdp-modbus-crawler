@@ -18,7 +18,7 @@ setup(
     package_dir={'modbus_crawler': 'modbus_crawler'},
     include_package_data=True,
     install_requires=[
-        'pymodbus==3.8.3', 'schedule'
+        'pymodbus==3.7.4', 'schedule'
     ],
     extras_require={
         'test': [
