@@ -1,0 +1,13 @@
+stages:
+  - test
+
+pytest:
+  stage: test
+  image: python:3.12
+  tags:
+    - ito
+  before_script:
+    - pip install .[test]  # Install package and test dependencies
+  script:
+    - cd test
+    - pytest
