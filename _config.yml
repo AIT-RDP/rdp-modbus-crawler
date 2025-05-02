@@ -1,0 +1,8 @@
+# Configuration for the documentation hosted via Github pages 
+remote_theme: pages-themes/minimal@v0.2.0
+plugins:
+- jekyll-remote-theme
+title: Modbus Crawler
+description: Simple Python Modbus Crawler that reads registers of a Modbus server/slave based on a register secification in a data frame/csv/...
+show_downloads: true
+
