@@ -152,10 +152,10 @@ def test_write():
     mbc.disconnect()
 
 def test_write_little_byte_order():
-    run_modbus_server(0, 200, 5030)
+    run_modbus_server(0, 200, 5031)
 
     mbc = ModbusTcpDevice(ip_address="localhost",
-                          modbus_port=5030,
+                          modbus_port=5031,
                           byteorder=Endian.LITTLE,
                           register_specs_file_name="registers_test_write.csv")
 
