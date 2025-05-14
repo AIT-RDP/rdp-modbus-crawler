@@ -1,6 +1,8 @@
+import sys
 import time
 from abc import ABC
 from typing import Dict
+from itertools import chain
 
 from pymodbus import ModbusException
 from pymodbus.client import ModbusBaseClient
@@ -106,6 +108,18 @@ class ModbusDevice(ABC):
         else:
             self.client.write_registers(modbus_register.register, prepared_value, slave=modbus_register.block.slave_id)
 
+    def _flip_pairs(self, s: str) -> str:
+        """
+        Flip the byte order of a string by swapping pairs of characters. This is apparently the fastest way to do it.
+        """
+
+        # If it is odd we add a space to the end which enables us to have a space before the last character
+        if len(s) & 1:
+            s += ' '
+
+        odds, evens = s[1::2], s[::2]  # two linear slices
+        return ''.join(chain.from_iterable(zip(odds, evens)))
+
     def _parse_response(self, resp, block: RegisterBlock) -> list[ModbusRegister]:
         return_list = list[ModbusRegister]()
 
@@ -138,6 +152,11 @@ class ModbusDevice(ABC):
                 # and one register has two bytes
                 decoded_value = pdc.decode_string(register.length * 2)
                 register.value = decoded_value.decode('utf-8')
+
+                # Flip two consecutive bytes if the byte order is big endian on little endian devices or vice versa
+                # This may not be correct for all devices, we will see
+                if (self.byteorder == Endian.BIG) != (sys.byteorder == "big"):
+                    register.value = self._flip_pairs(register.value)
 
                 # Remove leading and trailing whitespaces
                 register.value = register.value.strip()
@@ -203,6 +222,10 @@ class ModbusDevice(ABC):
                 # Check if string is too long
                 if len(value) > modbus_register.length * 2:
                     raise ValueError(f'String is too long for register {modbus_register.name}')
+
+                # Flip the string byte order if it is big endian on little endian devices or vice versa
+                if (self.byteorder == Endian.BIG) != (sys.byteorder == "big"):
+                    value = self._flip_pairs(value)
 
                 # Pad the string with spaces to the right
                 # TODO: Maybe add a parameter to choose the padding left or right

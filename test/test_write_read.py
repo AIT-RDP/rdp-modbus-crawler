@@ -2,6 +2,7 @@ import threading
 from math import isclose
 
 import pytest
+from pymodbus.constants import Endian
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSequentialDataBlock
 from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.server import StartTcpServer
@@ -127,6 +128,35 @@ def test_write():
 
     mbc = ModbusTcpDevice(ip_address="localhost",
                           modbus_port=5030,
+                          register_specs_file_name="registers_test_write.csv")
+
+    mbc.connect()
+
+    # Write all values
+    for i, register in enumerate(mbc.read_registers()):
+        print(f"Writing {write_test_values[i]} to register {register.name} ({register.register})")
+        mbc.write_register(register.register, write_test_values[i])
+
+    # Read all values and compare
+    registers = mbc.read_registers()
+    for i, register in enumerate(registers[:14]):
+        assert register.value == write_test_values[i], f"Register {register.name} has value {register.value} and should be {write_test_values[i]}"
+
+    for i, register in enumerate(registers):
+        assert isinstance(register.value, check_types[i]), f"Register {register.name} has type {type(register.value)} and should be {check_types[i]}"
+
+    data = mbc.read_registers_as_dict()
+
+    compare_special_values(data)
+
+    mbc.disconnect()
+
+def test_write_little_byte_order():
+    run_modbus_server(0, 200, 5030)
+
+    mbc = ModbusTcpDevice(ip_address="localhost",
+                          modbus_port=5030,
+                          byteorder=Endian.LITTLE,
                           register_specs_file_name="registers_test_write.csv")
 
     mbc.connect()
