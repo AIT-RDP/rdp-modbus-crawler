@@ -59,9 +59,10 @@ class AsyncModbusDevice(ModbusDevice):
 
         if value_type == 'coil':
             await self.client.write_coil(modbus_register.register, prepared_value, slave=modbus_register.block.slave_id)
-        else:
+        elif len(prepared_value) > 1:
             await self.client.write_registers(modbus_register.register, prepared_value, slave=modbus_register.block.slave_id)
-
+        else:
+            await self.client.write_register(modbus_register.register, prepared_value[0], slave=modbus_register.block.slave_id)
 
     def _callback_wrapper(self, callback):
         raise NotImplementedError

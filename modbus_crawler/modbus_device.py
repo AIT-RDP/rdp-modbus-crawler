@@ -105,8 +105,10 @@ class ModbusDevice(ABC):
 
         if value_type == 'coil':
             self.client.write_coil(modbus_register.register, prepared_value, slave=modbus_register.block.slave_id)
-        else:
+        elif len(prepared_value) > 1:
             self.client.write_registers(modbus_register.register, prepared_value, slave=modbus_register.block.slave_id)
+        else:
+            self.client.write_register(modbus_register.register, prepared_value[0], slave=modbus_register.block.slave_id)
 
     def _flip_pairs(self, s: str) -> str:
         """
