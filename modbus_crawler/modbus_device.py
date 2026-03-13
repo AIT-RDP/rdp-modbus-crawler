@@ -92,7 +92,7 @@ class ModbusDevice(ABC):
             raise ModbusException(
                 f'Could not read {modbus_register.name} register')
 
-        return self._parse_response(resp, modbus_register.block)[0]
+        return self._parse_single_register_response(resp, modbus_register)
 
     def write_register(self, register: str | int, value):
         """
@@ -191,6 +191,14 @@ class ModbusDevice(ABC):
             return_list.append(register)
 
         return return_list
+
+    def _parse_single_register_response(self, resp, modbus_register: ModbusRegister) -> ModbusRegister:
+        single_register_block = RegisterBlock(start_register=modbus_register.register,
+                                              slave_id=modbus_register.block.slave_id,
+                                              register_type=modbus_register.block.register_type,
+                                              mode=modbus_register.mode)
+        single_register_block.add_register_to_list(modbus_register)
+        return self._parse_response(resp, single_register_block)[0]
 
     def _prepare_write_register(self, register: str | int, value):
         modbus_register = self._register_lookup.get(register)

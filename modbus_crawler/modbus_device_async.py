@@ -46,7 +46,7 @@ class AsyncModbusDevice(ModbusDevice):
             raise ModbusException(
                 f'Could not read {modbus_register.name} register')
 
-        return self._parse_response(resp, modbus_register.block)[0]
+        return self._parse_single_register_response(resp, modbus_register)
 
     async def write_register(self, register: str | int, value):
         """
