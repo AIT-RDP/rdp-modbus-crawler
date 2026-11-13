@@ -14,12 +14,12 @@ data_types = (('int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64', 'float16
 # Note: any input names will be lower cased to be robust against typos of user inputs
 # Note: as a modbus register is 16 bit long, we use the term 'int' for a 16 bit variable
 data_type_lookup: dict[str, str] = {
-    'int': 'int16', 'short': 'int16', 'int16': 'int16',
-    'uint': 'uint16', 'ushort': 'uint16', 'uint16': 'uint16',
-    'dint': 'int32', 'long': 'int32', 'int32': 'int32',
-    'ulong': 'uint32', 'uint32': 'uint32',
-    'int64': 'int64',
-    'uint64': 'uint64',
+    'int': 'int16', 'short': 'int16', 'int16': 'int16', 's16': 'int16',
+    'uint': 'uint16', 'ushort': 'uint16', 'uint16': 'uint16', 'u16': 'uint16',
+    'dint': 'int32', 'long': 'int32', 'int32': 'int32', 's32': 'int32',
+    'ulong': 'uint32', 'uint32': 'uint32', 'u32': 'uint32',
+    'int64': 'int64', 's64': 'int64',
+    'uint64': 'uint64', 'u64': 'uint64',
     'half': 'float16', 'float16': 'float16',
     'float': 'float32', 'single': 'float32', 'real': 'float32', 'float32': 'float32',
     'double': 'float64', 'float64': 'float64',

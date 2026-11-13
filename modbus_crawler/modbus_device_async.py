@@ -46,7 +46,7 @@ class AsyncModbusDevice(ModbusDevice):
             raise ModbusException(
                 f'Could not read {modbus_register.name} register')
 
-        return self._parse_response(resp, modbus_register.block)[0]
+        return self._parse_single_register_response(resp, modbus_register)
 
     async def write_register(self, register: str | int, value):
         """
@@ -63,6 +63,19 @@ class AsyncModbusDevice(ModbusDevice):
             await self.client.write_registers(modbus_register.register, prepared_value, slave=modbus_register.block.slave_id)
         else:
             await self.client.write_register(modbus_register.register, prepared_value[0], slave=modbus_register.block.slave_id)
+
+    async def write_registers(self, values: dict[str | int, object]):
+        """
+        Write several registers by name or register id with one "write multiple registers" request (function 0x10).
+
+        The registers must follow each other without a gap and belong to the same unit and register type. A single
+        register works too, for devices that refuse "write single register" (0x06) for 16-bit values. The values are
+        cast and encoded like in write_register.
+        """
+        start_register, payload, slave_id = self._prepare_write_registers(values)
+        resp = await self.client.write_registers(start_register, payload, slave=slave_id)
+        if resp.isError():
+            raise ModbusException(f'Could not write registers {list(values)}')
 
     def _callback_wrapper(self, callback):
         raise NotImplementedError
