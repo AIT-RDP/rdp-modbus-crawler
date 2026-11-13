@@ -92,7 +92,7 @@ class ModbusDevice(ABC):
             raise ModbusException(
                 f'Could not read {modbus_register.name} register')
 
-        return self._parse_response(resp, modbus_register.block)[0]
+        return self._parse_single_register_response(resp, modbus_register)
 
     def write_register(self, register: str | int, value):
         """
@@ -109,6 +109,39 @@ class ModbusDevice(ABC):
             self.client.write_registers(modbus_register.register, prepared_value, slave=modbus_register.block.slave_id)
         else:
             self.client.write_register(modbus_register.register, prepared_value[0], slave=modbus_register.block.slave_id)
+
+    def write_registers(self, values: dict[str | int, object]):
+        """
+        Write several registers by name or register id with one "write multiple registers" request (function 0x10).
+
+        The registers must follow each other without a gap and belong to the same unit and register type. A single
+        register works too, for devices that refuse "write single register" (0x06) for 16-bit values. The values are
+        cast and encoded like in write_register.
+        """
+        start_register, payload, slave_id = self._prepare_write_registers(values)
+        resp = self.client.write_registers(start_register, payload, slave=slave_id)
+        if resp.isError():
+            raise ModbusException(f'Could not write registers {list(values)}')
+
+    def _prepare_write_registers(self, values: dict[str | int, object]) -> tuple[int, list[int], int]:
+        """Encode the values into one payload, checked to be one gapless run of registers."""
+        if not values:
+            raise ValueError('No registers to write')
+
+        prepared = sorted((self._prepare_write_register(register, value) for register, value in values.items()),
+                          key=lambda entry: entry[0].register)
+        first = prepared[0][0]
+        payload = list[int]()
+        for modbus_register, registers, value_type in prepared:
+            if value_type == 'coil':
+                raise ValueError(f'{modbus_register.name} is a coil, write_registers writes registers only')
+            if (modbus_register.block.slave_id, modbus_register.block.register_type) != \
+                    (first.block.slave_id, first.block.register_type):
+                raise ValueError(f'{modbus_register.name} has another unit id or register type than {first.name}')
+            if modbus_register.register != first.register + len(payload):
+                raise ValueError(f'{modbus_register.name} does not follow the previous register without a gap')
+            payload.extend(registers)
+        return first.register, payload, first.block.slave_id
 
     def _flip_pairs(self, s: str) -> str:
         """
@@ -191,6 +224,14 @@ class ModbusDevice(ABC):
             return_list.append(register)
 
         return return_list
+
+    def _parse_single_register_response(self, resp, modbus_register: ModbusRegister) -> ModbusRegister:
+        single_register_block = RegisterBlock(start_register=modbus_register.register,
+                                              slave_id=modbus_register.block.slave_id,
+                                              register_type=modbus_register.block.register_type,
+                                              mode=modbus_register.mode)
+        single_register_block.add_register_to_list(modbus_register)
+        return self._parse_response(resp, single_register_block)[0]
 
     def _prepare_write_register(self, register: str | int, value):
         modbus_register = self._register_lookup.get(register)
